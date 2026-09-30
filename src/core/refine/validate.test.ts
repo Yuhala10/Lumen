@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { blockingIssues, flagsAfterTraderEdit, normalizeBox, pageChecks, refinePage } from "./validate.ts";
+import { blockingIssues, flagsAfterTraderEdit, normalizeBox, pageChecks, readingQuality, refinePage } from "./validate.ts";
 import { parseLooseDate } from "../dates.ts";
 import { parseAmount } from "../money.ts";
 
@@ -124,4 +124,37 @@ test("checks written totals against the lines", () => {
   const [bad] = pageChecks(entries, [{ label: "Total", amount: 4500, type: "sale" }]);
   assert.equal(bad.ok, false);
   assert.equal(bad.difference, 1000);
+});
+
+test("a shaky reading asks for a second opinion", () => {
+  const good = refinePage(
+    {
+      document: "sales_notebook",
+      legible: true,
+      lines: [
+        line({ description: "Tomates", amount: 1500, date: "2026-09-29" }),
+        line({ description: "Piment", amount: 600, date: "2026-09-29" }),
+        line({ kind: "total_sales", description: "Total", amount: 2100, date: "2026-09-29" }),
+      ],
+    },
+    TODAY,
+  );
+  assert.equal(readingQuality(good).needsSecondOpinion, false);
+
+  const wrongTotal = refinePage(
+    {
+      document: "sales_notebook",
+      legible: true,
+      lines: [line({ description: "Tomates", amount: 1500, date: "2026-09-29" }), line({ kind: "total_sales", amount: 9100, date: "2026-09-29" })],
+    },
+    TODAY,
+  );
+  assert.equal(readingQuality(wrongTotal).needsSecondOpinion, true);
+  assert.ok(readingQuality(wrongTotal).score > readingQuality(good).score);
+
+  const nothing = refinePage({ document: "sales_notebook", legible: true, lines: [] }, TODAY);
+  assert.equal(readingQuality(nothing).needsSecondOpinion, true);
+
+  const notARecord = refinePage({ document: "other", legible: true, lines: [] }, TODAY);
+  assert.equal(readingQuality(notARecord).needsSecondOpinion, false);
 });

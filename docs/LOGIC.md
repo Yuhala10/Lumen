@@ -15,6 +15,14 @@ Four rules run through the whole system:
 
 ## Refine
 
+**Fast read, then a second opinion when needed.** Every page is first read by the fast model, Gemini 3.5 Flash-Lite, which takes about 5 seconds. Code then judges the reading (`readingQuality` in `core/refine/validate.ts`). The careful model, Gemini 3.8 Flash, reads the page again when any of these hold:
+
+- more than a quarter of the lines are flagged
+- a written total does not match the lines
+- nothing was found on what should be a notebook page
+
+The cleaner reading wins. If the fast model is busy, the careful model takes over automatically, and the reverse.
+
 The AI returns strict JSON, described by a JSON Schema sent with the request. That output is then validated again with zod (`core/refine/schema.ts`). The model is told to copy amounts as written and never do arithmetic. Code then applies these rules (`core/refine/validate.ts`):
 
 - **Dates.** The date as written wins over the model's guess. Dates are read day first. A date written without a year takes the most recent year that is not in the future. Lines inherit the page's date heading.
@@ -76,12 +84,14 @@ Deposits, meaning the trader's own cash-in, never count as sales.
 
 ## Questions
 
-A lender's question is answered from an **evidence pack** (`ask.ts`). The pack holds the pre-computed totals and every counted line, each with a short citation code. The model must cite codes for every claim and never recommend a lending decision.
+A lender's question is answered from an **evidence pack** (`ask.ts`). The pack holds the pre-computed totals and every counted line. Everything in it has a short citation code: lines, mobile money transactions, weeks, months, items, and summary groups such as all sales or backed payments. The model must cite codes for every claim and never recommend a lending decision.
 
 The answer is then audited:
 
 - Citations that do not exist are removed.
+- Codes the model wrote into a sentence become tappable citations.
 - Any figure that cannot be traced to the pack, within 1%, is flagged to the reader.
+- An answer that cites nothing is marked as unsourced.
 
 ## Privacy
 

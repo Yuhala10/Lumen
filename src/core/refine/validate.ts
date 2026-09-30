@@ -1,7 +1,7 @@
 import type { Box, EntryFlag, EntryType, IsoDate, MomoDirection, MomoKind, Provider, WrittenTotal } from "../types.ts";
 import { MomoReadingSchema, PageReadingSchema } from "./schema.ts";
 import { isIsoDate, parseLooseDate } from "../dates.ts";
-import { dateFlags } from "./flags.ts";
+import { dateFlags, pageChecks as checkTotals } from "./flags.ts";
 import { collapseSpaces } from "../text.ts";
 import { TrustError } from "../errors.ts";
 
@@ -229,6 +229,39 @@ export function refineMomoReading(raw: unknown, today: IsoDate): RefinedMomo {
   }
 
   return { document: r.document, legible: r.legible, note: r.note || undefined, transactions, unread };
+}
+
+export interface ReadingQuality {
+  /** Lower is better. */
+  score: number;
+  unsure: number;
+  totalsOk: boolean;
+  empty: boolean;
+  needsSecondOpinion: boolean;
+}
+
+/**
+ * How trustworthy a page reading looks, judged only by code: how many lines
+ * were flagged, whether the trader's written totals match, whether anything
+ * was found at all. A shaky reading earns a second opinion from a stronger model.
+ */
+export function readingQuality(page: RefinedPage): ReadingQuality {
+  const n = page.entries.length;
+  const unsure = page.entries.filter((e) => e.flags.length > 0).length;
+  const checks = checkTotals(
+    page.entries.map((e) => ({ ...e, status: "pending" as const })),
+    page.writtenTotals,
+    page.pageDate,
+  );
+  const totalsOk = checks.every((c) => c.ok);
+  const empty = n === 0 && page.document !== "other";
+  return {
+    score: unsure + (totalsOk ? 0 : 3) + (empty ? 5 : 0),
+    unsure,
+    totalsOk,
+    empty,
+    needsSecondOpinion: empty || !totalsOk || (n > 0 && unsure / n > 0.25),
+  };
 }
 
 export {

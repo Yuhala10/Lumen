@@ -74,6 +74,8 @@ export function AskCard({
       return x ? `${formatCompact(x.amount, locale)} · MoMo` : "?";
     }
     if (ref.kind === "week") return formatDate(ref.key, locale);
+    if (ref.kind === "item") return ref.label;
+    if (ref.kind === "group") return t.ask.groups[ref.key] ?? ref.key;
     return new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-GB", { month: "long", year: "numeric", timeZone: "UTC" }).format(
       new Date(`${ref.key}-15T12:00:00Z`),
     );
@@ -85,6 +87,20 @@ export function AskCard({
     else if (ref.kind === "week") {
       const w = profile.weeks.find((x) => x.key === ref.key);
       if (w) evidence.open({ type: "entries", title: t.evidence.weekTitle(formatRange(w.start, w.end, locale)), ids: w.entryIds });
+    } else if (ref.kind === "group") {
+      const title = t.ask.groups[ref.key] ?? ref.key;
+      const m = profile.momo;
+      if (ref.key === "sales") evidence.open({ type: "entries", title, ids: profile.sales.entryIds });
+      else if (ref.key === "expenses") evidence.open({ type: "entries", title, ids: profile.expenses.entryIds });
+      else if (ref.key === "trend") {
+        const keys = new Set(profile.trend?.weekKeys ?? []);
+        evidence.open({ type: "entries", title, ids: profile.weeks.filter((w) => keys.has(w.key)).flatMap((w) => w.entryIds) });
+      } else if (ref.key === "momo_in") evidence.open({ type: "momoList", title, ids: m.inflowIds });
+      else if (ref.key === "momo_backed") evidence.open({ type: "momoList", title, ids: m.corroboratedIds });
+      else evidence.open({ type: "momoList", title, ids: m.unmatchedIds });
+    } else if (ref.kind === "item") {
+      const it = profile.items.find((x) => x.key === ref.key);
+      if (it) evidence.open({ type: "entries", title: it.label, ids: it.entryIds });
     } else {
       const mo = profile.months.find((x) => x.key === ref.key);
       if (mo) evidence.open({ type: "entries", title: chipLabel(ref), ids: mo.entryIds });
@@ -194,12 +210,34 @@ function Answer({
               onClick={() => open(ref)}
               className="mx-0.5 inline-flex h-6 translate-y-[-1px] items-center gap-1 rounded-md bg-marker px-1.5 align-middle text-[11.5px] font-semibold text-ink transition-[filter] hover:brightness-95"
             >
-              <Icon name={ref.kind === "momo" ? "message" : ref.kind === "entry" ? "highlighter" : "calendar"} size={12} strokeWidth={2} />
+              <Icon
+                name={
+                  ref.kind === "momo"
+                    ? "message"
+                    : ref.kind === "entry"
+                      ? "highlighter"
+                      : ref.kind === "item"
+                        ? "store"
+                        : ref.kind === "group"
+                          ? ref.key.startsWith("momo")
+                            ? "wallet"
+                            : "layers"
+                          : "calendar"
+                }
+                size={12}
+                strokeWidth={2}
+              />
               {label(ref)}
             </button>
           );
         })}
       </p>
+      {result.uncited ? (
+        <p className="mt-2.5 flex gap-2 rounded-lg bg-warn-soft px-3 py-2 text-[12.5px] leading-5 text-warn">
+          <Icon name="info" size={15} className="mt-0.5" />
+          {t.ask.uncited}
+        </p>
+      ) : null}
       {result.untraced.length ? (
         <p className="mt-2.5 flex gap-2 rounded-lg bg-warn-soft px-3 py-2 text-[12.5px] leading-5 text-warn">
           <Icon name="alert" size={15} className="mt-0.5" />

@@ -432,6 +432,15 @@ export const en = {
     unanswerable: "The evidence cannot fully answer this.",
     meta: (model: string, seconds: string) => `${model} · ${seconds}s`,
     needsKey: "Add a Gemini key to ask questions.",
+    uncited: "This answer cites no evidence. Check it against the profile before relying on it.",
+    groups: {
+      sales: "All sales",
+      expenses: "All expenses",
+      trend: "Trend weeks",
+      momo_in: "Mobile money received",
+      momo_backed: "Backed payments",
+      momo_unbacked: "Unbacked payments",
+    } as Record<string, string>,
   },
   share: {
     title: "Share with a lender",

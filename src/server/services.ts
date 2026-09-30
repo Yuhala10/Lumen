@@ -400,6 +400,7 @@ export async function readSource(sourceId: string): Promise<ReadResult> {
           note: p.note,
           pageDate: p.pageDate,
           writtenTotals: p.writtenTotals,
+          secondOpinion: reading.secondOpinion || undefined,
         };
       } else {
         const m = reading.momo;

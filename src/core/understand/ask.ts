@@ -16,7 +16,12 @@ export type EvidenceRef =
   | { kind: "entry"; id: string }
   | { kind: "momo"; id: string }
   | { kind: "week"; key: string }
-  | { kind: "month"; key: string };
+  | { kind: "month"; key: string }
+  | { kind: "item"; key: string; label: string }
+  | { kind: "group"; key: EvidenceGroup };
+
+/** Summary figures cite the whole set of lines they were computed from. */
+export type EvidenceGroup = "sales" | "expenses" | "trend" | "momo_in" | "momo_backed" | "momo_unbacked";
 
 export interface EvidencePack {
   text: string;
@@ -52,25 +57,38 @@ export function buildEvidencePack(trader: Trader, profile: Profile, counted: Ent
   lines.push(`PERIOD: ${p.start} to ${p.end} (${p.days} days, ${p.weeks} weeks).`);
 
   const s = profile.sales;
-  lines.push("SUMMARY (computed by code, use these instead of adding lines yourself):");
-  lines.push(`- Total recorded sales: ${n(s.total)}`);
-  lines.push(`- Total recorded expenses: ${n(profile.expenses.total)}`);
-  lines.push(`- Sales minus expenses: ${n(profile.net)}`);
-  lines.push(`- Average weekly sales: ${n(s.avgWeekly)} (over ${s.fullWeeks} full weeks); median week ${n(s.medianWeekly)}`);
-  lines.push(`- Average sales per trading day: ${n(s.avgPerActiveDay)}; trading days: ${s.activeDays} (${s.activeDaysPerWeek} per week)`);
-  if (s.bestWeek) lines.push(`- Best week: W${s.bestWeek.key} with ${n(s.bestWeek.sales)}`);
+  const group = (code: string, key: EvidenceGroup) => {
+    refs[code] = { kind: "group", key };
+    return `[${code}]`;
+  };
+  const SALES = group("G1", "sales");
+  const EXPENSES = group("G2", "expenses");
+  lines.push("SUMMARY (computed by code, use these instead of adding lines yourself; each line starts with its citation code):");
+  lines.push(`- ${SALES} Total recorded sales: ${n(s.total)}`);
+  lines.push(`- ${EXPENSES} Total recorded expenses: ${n(profile.expenses.total)}`);
+  lines.push(`- ${SALES}${EXPENSES} Sales minus expenses: ${n(profile.net)}`);
+  lines.push(`- ${SALES} Average weekly sales: ${n(s.avgWeekly)} (over ${s.fullWeeks} full weeks); median week ${n(s.medianWeekly)}`);
+  lines.push(`- ${SALES} Average sales per trading day: ${n(s.avgPerActiveDay)}; trading days: ${s.activeDays} (${s.activeDaysPerWeek} per week)`);
+  if (s.bestWeek) lines.push(`- [W${s.bestWeek.key}] Best week, with ${n(s.bestWeek.sales)}`);
   if (profile.trend) {
     const t = profile.trend;
-    lines.push(`- Trend: ${t.direction}, ${pct(t.pctPer4Weeks)} per 4 weeks over ${t.weeksUsed} weeks`);
+    const TREND = group("G3", "trend");
+    lines.push(`- ${TREND} Trend: ${t.direction}, ${pct(t.pctPer4Weeks)} per 4 weeks over ${t.weeksUsed} weeks`);
     if (t.recent !== undefined && t.previous !== undefined) {
-      lines.push(`- Last 4 weeks average ${n(t.recent)} vs previous 4 weeks ${n(t.previous)}`);
+      lines.push(`- ${TREND} Last 4 weeks average ${n(t.recent)} vs previous 4 weeks ${n(t.previous)}`);
     }
   } else lines.push("- Trend: not enough full weeks to measure");
-  if (profile.consistency) lines.push(`- Week-to-week consistency: ${profile.consistency.label.replace("_", " ")}`);
+  if (profile.consistency) lines.push(`- ${SALES} Week-to-week consistency: ${profile.consistency.label.replace("_", " ")}`);
   const m = profile.momo;
-  lines.push(
-    `- Mobile money customer payments in period: ${m.inflowIds.length} totalling ${n(m.inflowAmount)}; backed by notebook sales: ${n(m.corroboratedAmount)} (${pct(m.rateAmount)}); share of recorded sales paid by mobile money: ${pct(m.shareOfSales)}`,
-  );
+  if (m.inflowIds.length) {
+    const IN = group("G4", "momo_in");
+    const BACKED = group("G5", "momo_backed");
+    lines.push(`- ${IN} Mobile money customer payments in period: ${m.inflowIds.length} totalling ${n(m.inflowAmount)}`);
+    lines.push(`- ${BACKED} Of these, backed by notebook sales: ${n(m.corroboratedAmount)} (${pct(m.rateAmount)}); share of recorded sales paid by mobile money: ${pct(m.shareOfSales)}`);
+    if (m.unmatchedIds.length) {
+      lines.push(`- ${group("G6", "momo_unbacked")} Not backed by the notebook: ${m.unmatchedIds.length} payments totalling ${n(m.inflowAmount - m.corroboratedAmount)}`);
+    }
+  } else lines.push("- No mobile money customer payments on file");
   lines.push(`- Written daily totals matching the lines: ${profile.checks.passed} of ${profile.checks.total}`);
   lines.push(`- Evidence strength: ${profile.strength.score}/100 (${profile.strength.grade})`);
 
@@ -89,8 +107,12 @@ export function buildEvidencePack(trader: Trader, profile: Profile, counted: Ent
     lines.push(`${code} | ${n(mo.sales)} | ${n(mo.expenses)} | ${mo.activeDays}`);
   }
 
-  lines.push("ITEMS BY SALES (item | sales | lines | share):");
-  for (const it of profile.items) lines.push(`${it.label} | ${n(it.sales)} | ${it.lines} | ${pct(it.share)}`);
+  lines.push("ITEMS BY SALES (code | item | sales | lines | share):");
+  profile.items.forEach((it, i) => {
+    const code = `I${i + 1}`;
+    refs[code] = { kind: "item", key: it.key, label: it.label };
+    lines.push(`${code} | ${it.label} | ${n(it.sales)} | ${it.lines} | ${pct(it.share)}`);
+  });
 
   lines.push("WEEKDAYS (day | average sales on trading days | trading days):");
   for (const d of profile.weekdays) if (d.days) lines.push(`${WEEKDAY_NAMES[d.day]} | ${n(d.avgSales)} | ${d.days}`);
@@ -123,7 +145,9 @@ export function askSystemPrompt(locale: Locale): string {
     "Answer ONLY from the evidence pack. Never use outside knowledge about this business.",
     "Rules:",
     "- Prefer the pre-computed SUMMARY, WEEKS, MONTHS, ITEMS and WEEKDAYS figures. Do not add up lines yourself when a total exists.",
-    "- Every factual claim must end with citation codes in square brackets, e.g. [W2026-07-20] or [E12, E13]. Use only codes that appear in the pack.",
+    "- Every factual claim must end with citation codes in square brackets, e.g. [W2026-07-20], [MO2026-08], [I1] or [E12, E13]. Use only codes that appear in the pack.",
+    "- Each SUMMARY line starts with its own citation code, such as [G1]: cite it when you use that figure. For products, cite ITEMS codes.",
+    "- Codes go ONLY inside square brackets at the end of a claim. Never write a code as a word inside the sentence; say 'in August', not 'in MO2026-08'.",
     "- Write amounts exactly as they appear in the pack, followed by FCFA (e.g. 85 500 FCFA).",
     "- If the pack cannot answer the question, set answerable to false and say briefly what evidence is missing.",
     "- Be concise: at most 4 sentences. Plain language a busy loan officer can read in seconds.",
@@ -158,9 +182,13 @@ export interface AuditedAnswer {
   segments: AnswerSegment[];
   citations: { code: string; ref: EvidenceRef }[];
   untraced: number[];
+  /** The model made factual claims without citing any evidence. */
+  uncited: boolean;
 }
 
-const CODE_RE = /^(E\d+|M\d+|W\d{4}-\d{2}-\d{2}|MO\d{4}-\d{2})$/;
+const CODE_PATTERN = "E\\d+|M\\d+|I\\d+|G\\d+|W\\d{4}-\\d{2}-\\d{2}|MO\\d{4}-\\d{2}";
+const CODE_RE = new RegExp(`^(${CODE_PATTERN})$`);
+const BARE_CODE_RE = new RegExp(`\\b(${CODE_PATTERN})\\b`, "g");
 
 function traced(value: number, pack: EvidencePack): boolean {
   return pack.numbers.some((n) => Math.abs(n - value) <= Math.max(50, Math.abs(n) * 0.01));
@@ -170,6 +198,7 @@ function traced(value: number, pack: EvidencePack): boolean {
 export function findUntracedNumbers(text: string, pack: EvidencePack): number[] {
   const cleaned = text
     .replace(/\[[^\]]*\]/g, " ")
+    .replace(BARE_CODE_RE, " ")
     .replace(/\b\d{4}-\d{2}-\d{2}\b/g, " ")
     .replace(/\b\d{1,2}\/\d{1,2}(\/\d{2,4})?\b/g, " ");
   const out: number[] = [];
@@ -213,14 +242,43 @@ export function auditAnswer(raw: unknown, pack: EvidencePack): AuditedAnswer {
 
   for (const code of a.citations.map((c) => c.trim())) if (valid(code) && !cited.includes(code)) cited.push(code);
 
-  // Tidy spaces left where invalid markers were removed.
-  const tidy = segments.map((s) => (s.type === "text" ? { ...s, text: s.text.replace(/\s+([.,;:])/g, "$1") } : s));
+  // Join text left on both sides of a dropped marker, then tidy spaces before punctuation.
+  const merged: AnswerSegment[] = [];
+  for (const seg of segments) {
+    const last = merged.at(-1);
+    if (seg.type === "text" && last?.type === "text") last.text += seg.text;
+    else merged.push({ ...seg });
+  }
+  const tidy = merged.map((s) =>
+    s.type === "text" ? { ...s, text: s.text.replace(/\s+([.,;:])/g, "$1").replace(/ {2,}/g, " ") } : s,
+  );
+
+  // Codes the model wrote into the sentence itself become citation chips too.
+  const final: AnswerSegment[] = [];
+  for (const seg of tidy) {
+    if (seg.type !== "text") {
+      final.push(seg);
+      continue;
+    }
+    let at = 0;
+    for (const m of seg.text.matchAll(BARE_CODE_RE)) {
+      const code = m[1];
+      if (!valid(code)) continue;
+      const index = m.index ?? 0;
+      if (index > at) final.push({ type: "text", text: seg.text.slice(at, index) });
+      final.push({ type: "cite", code });
+      if (!cited.includes(code)) cited.push(code);
+      at = index + code.length;
+    }
+    if (at < seg.text.length) final.push({ type: "text", text: seg.text.slice(at) });
+  }
 
   return {
     answerable: a.answerable,
     confidence: a.confidence,
-    segments: tidy,
+    segments: final,
     citations: cited.map((code) => ({ code, ref: pack.refs[code] })),
     untraced: findUntracedNumbers(a.answer, pack),
+    uncited: a.answerable && cited.length === 0,
   };
 }

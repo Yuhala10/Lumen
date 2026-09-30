@@ -437,6 +437,15 @@ export const fr: Dict = {
     unanswerable: "Les preuves ne permettent pas de répondre complètement.",
     meta: (model: string, seconds: string) => `${model} · ${seconds} s`,
     needsKey: "Ajoutez une clé Gemini pour poser des questions.",
+    uncited: "Cette réponse ne cite aucune preuve. Vérifiez-la avec le profil avant de vous y fier.",
+    groups: {
+      sales: "Toutes les ventes",
+      expenses: "Toutes les dépenses",
+      trend: "Semaines de la tendance",
+      momo_in: "Mobile money reçu",
+      momo_backed: "Paiements confirmés",
+      momo_unbacked: "Paiements non confirmés",
+    },
   },
   share: {
     title: "Partager avec un prêteur",

@@ -57,3 +57,28 @@ test("flags figures that cannot be traced to the evidence", () => {
   assert.deepEqual(findUntracedNumbers("She sells 987 654 FCFA a week.", pack), [987654]);
   assert.deepEqual(findUntracedNumbers("Growth of 999% per month.", pack), [999]);
 });
+
+test("items can be cited, and dropped markers leave clean text", () => {
+  const { pack } = estellePack();
+  assert.equal(pack.refs.I1?.kind, "item");
+  const audited = auditAnswer(
+    { answerable: true, answer: "Growth was steady [SUMMARY]. Plantain leads [I1] .", citations: [], confidence: "high" },
+    pack,
+  );
+  const text = audited.segments.map((s) => (s.type === "text" ? s.text : `{${s.code}}`)).join("");
+  assert.equal(text, "Growth was steady. Plantain leads {I1}.");
+});
+
+test("summary figures are citable, bare codes become chips, silence is flagged", () => {
+  const { profile, pack } = estellePack();
+  assert.deepEqual(pack.refs.G1, { kind: "group", key: "sales" });
+  assert.equal(pack.refs.G4?.kind, "group");
+  const month = `MO${profile.months[1].key}`;
+  const bare = auditAnswer({ answerable: true, answer: `Sales rose in ${month} to a record.`, citations: [], confidence: "high" }, pack);
+  assert.ok(bare.segments.some((s) => s.type === "cite" && s.code === month), "a code written in the sentence becomes a chip");
+  assert.equal(bare.uncited, false);
+  const silent = auditAnswer({ answerable: true, answer: "Sales are good.", citations: [], confidence: "high" }, pack);
+  assert.equal(silent.uncited, true);
+  const refused = auditAnswer({ answerable: false, answer: "The records do not cover loans.", citations: [], confidence: "low" }, pack);
+  assert.equal(refused.uncited, false);
+});

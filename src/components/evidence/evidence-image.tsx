@@ -42,6 +42,12 @@ export function EvidenceImage({
   const scroller = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(false);
   const [loaded, setLoaded] = useState(Boolean(source.demo));
+  const img = useRef<HTMLImageElement>(null);
+
+  // A cached photo can finish loading before React attaches onLoad; check once mounted.
+  useEffect(() => {
+    if (img.current?.complete && img.current.naturalWidth > 0) setLoaded(true);
+  }, [source.id]);
 
   const width = source.demo ? PAGE_W : (source.file?.width ?? 3);
   const height = source.demo ? PAGE_H : (source.file?.height ?? 4);
@@ -78,6 +84,7 @@ export function EvidenceImage({
                 src={`/api/sources/${source.id}/image`}
                 alt=""
                 decoding="async"
+                ref={img}
                 onLoad={() => setLoaded(true)}
                 className={cn("absolute inset-0 h-full w-full object-fill transition-opacity duration-300", loaded ? "opacity-100" : "opacity-0")}
               />

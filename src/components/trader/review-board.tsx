@@ -395,6 +395,7 @@ export function ReviewBoard({
           {/* page image */}
           <div className="lg:sticky lg:top-24 lg:self-start">
             <EvidenceImage
+              key={page.id}
               source={page}
               highlights={highlights}
               focus={selectedEntry?.box ?? (failingTotal && !selected ? failingTotal.box : undefined)}

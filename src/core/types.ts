@@ -101,6 +101,8 @@ export interface SourceReading {
   note?: string;
   pageDate?: IsoDate;
   writtenTotals: WrittenTotal[];
+  /** The fast reading looked shaky, so the careful model read the page too. */
+  secondOpinion?: boolean;
 }
 
 export interface Source {

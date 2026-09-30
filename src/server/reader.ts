@@ -1,7 +1,7 @@
 import type { IsoDate, SourceKind, Trader } from "@/core/types";
 import { MOMO_JSON_SCHEMA, PAGE_JSON_SCHEMA } from "@/core/refine/schema";
-import { refineMomoReading, refinePage, type RefinedMomo, type RefinedPage } from "@/core/refine/validate";
-import { generateJson } from "./gemini";
+import { readingQuality, refineMomoReading, refinePage, type RefinedMomo, type RefinedPage } from "@/core/refine/validate";
+import { aiConfig, generateJson } from "./gemini";
 
 /**
  * Refine: the AI reader. It transcribes; it never counts.
@@ -55,7 +55,7 @@ function context(trader: Trader, today: IsoDate): string {
 }
 
 export type PhotoReading =
-  | { kind: "page"; page: RefinedPage; model: string; ms: number; attempts: number }
+  | { kind: "page"; page: RefinedPage; model: string; ms: number; attempts: number; secondOpinion: boolean }
   | { kind: "momo"; momo: RefinedMomo; model: string; ms: number; attempts: number };
 
 export async function readPhoto(input: {
@@ -77,12 +77,37 @@ export async function readPhoto(input: {
     return { kind: "momo", momo: refineMomoReading(result.data, today), model: result.model, ms: result.ms, attempts: result.attempts };
   }
 
-  const result = await generateJson({
+  const request = {
     system: (input.kind === "receipt" ? RECEIPT_PROMPT : NOTEBOOK_PROMPT).replaceAll("{TODAY}", today),
     parts: [image, { text: `${context(input.trader, today)} Read this ${input.kind === "receipt" ? "receipt" : "notebook page"}.` }],
     schema: PAGE_JSON_SCHEMA,
-  });
-  return { kind: "page", page: refinePage(result.data, today), model: result.model, ms: result.ms, attempts: result.attempts };
+  };
+
+  // Fast model first. A shaky reading gets a second opinion from the careful
+  // model, and the cleaner of the two readings wins.
+  const cfg = aiConfig();
+  const first = await generateJson({ ...request, models: [cfg.model, cfg.fallback] });
+  const firstPage = refinePage(first.data, today);
+  const quality = readingQuality(firstPage);
+  let best = { page: firstPage, model: first.model };
+  let ms = first.ms;
+  let attempts = first.attempts;
+  let secondOpinion = false;
+
+  const timeLeft = !cfg.hosted || first.ms < 12_000;
+  if (quality.needsSecondOpinion && first.model !== cfg.fallback && timeLeft) {
+    try {
+      const second = await generateJson({ ...request, models: [cfg.fallback] });
+      const secondPage = refinePage(second.data, today);
+      ms += second.ms;
+      attempts += second.attempts;
+      secondOpinion = true;
+      if (readingQuality(secondPage).score < quality.score) best = { page: secondPage, model: second.model };
+    } catch {
+      /* the first reading stands; the trader still reviews every flagged line */
+    }
+  }
+  return { kind: "page", page: best.page, model: best.model, ms, attempts, secondOpinion };
 }
 
 export async function readMessages(messages: string[], trader: Trader, today: IsoDate): Promise<RefinedMomo> {

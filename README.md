@@ -35,6 +35,7 @@ Without a key, everything works except reading new photos and asking questions. 
 | `npm test` | Unit tests for the core logic |
 | `npm run typecheck` | TypeScript check |
 | `npm run lint` | ESLint |
+| `node --env-file=.env.local scripts/speed-test.ts <photo>` | Compare Gemini models on one photo |
 
 ## How the code is organised
 

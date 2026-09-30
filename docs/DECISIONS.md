@@ -24,4 +24,6 @@ Each decision, with its reason. Newest last.
 
 **Next.js 16, TypeScript, Tailwind CSS 4, Motion and zod.** These are the only runtime dependencies besides React.
 
+**2026-09-30: Fast model first, careful model as second opinion.** On a live test page, Gemini 3.8 Flash took 43 seconds and was often overloaded. Gemini 3.5 Flash-Lite read the same page perfectly in about 5 seconds. So the fast model reads every page, and code decides when a page deserves the careful model's second opinion. Traders wait seconds, not minutes, and hard pages still get the stronger model. Questions use the fast model too, answering in about 2 seconds.
+
 **The core has no framework.** `src/core` is plain TypeScript, tested with Node's built-in test runner. The logic can move to a mobile app, a worker or another server unchanged.

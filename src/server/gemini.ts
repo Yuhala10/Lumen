@@ -23,6 +23,8 @@ export interface GenerateOptions {
   system: string;
   parts: GeminiPart[];
   schema: object;
+  /** Models to try, in order. Defaults to the fast model, then the careful one. */
+  models?: string[];
 }
 
 export interface GenerateResult {
@@ -37,9 +39,11 @@ export function aiConfig() {
   return {
     key,
     configured: key.length > 10,
-    model: process.env.GEMINI_MODEL?.trim() || "gemini-3.8-flash",
-    fallback: process.env.GEMINI_FALLBACK_MODEL?.trim() || "gemini-3.5-flash-lite",
+    // Fast model reads first; the careful model is the backup and the second opinion.
+    model: process.env.GEMINI_MODEL?.trim() || "gemini-3.5-flash-lite",
+    fallback: process.env.GEMINI_FALLBACK_MODEL?.trim() || "gemini-3.8-flash",
     minGapMs: Number(process.env.GEMINI_MIN_GAP_MS ?? 1200) || 0,
+    hosted: HOSTED,
   };
 }
 
@@ -189,7 +193,7 @@ export async function generateJson(opts: GenerateOptions): Promise<GenerateResul
   if (!cfg.configured) {
     throw new TrustError("no_ai_key", "AI reading is off: GEMINI_API_KEY is not set in .env.local.", 503);
   }
-  const models = [cfg.model, cfg.fallback].filter((m, i, all) => m && all.indexOf(m) === i);
+  const models = (opts.models ?? [cfg.model, cfg.fallback]).filter((m, i, all) => m && all.indexOf(m) === i);
   const started = Date.now();
   let attempts = 0;
   let lastError: TrustError | null = null;
