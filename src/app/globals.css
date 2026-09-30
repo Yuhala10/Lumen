@@ -1,0 +1,327 @@
+@import "tailwindcss";
+
+/*
+ * Trust design system.
+ * Warm paper surfaces, deep trust green, and one signature: the highlighter
+ * that marks the exact line of evidence behind every number.
+ */
+
+:root {
+  --bg: #f6f3ec;
+  --surface: #ffffff;
+  --surface-2: #fbf9f4;
+  --sunken: #efe9dd;
+  --line: #e5ddcd;
+  --line-strong: #d2c8b4;
+  --ink: #15201a;
+  --ink-2: #44504a;
+  --ink-3: #636f68;
+  --brand: #0e6b4f;
+  --brand-strong: #0a553f;
+  --brand-soft: #e1eee7;
+  --brand-ink: #ffffff;
+  --marker: rgba(247, 204, 62, 0.58);
+  --marker-edge: #e2b21f;
+  --good: #1b7a4b;
+  --good-soft: #e2f1e8;
+  --warn: #945606;
+  --warn-soft: #fbefd6;
+  --danger: #ad3727;
+  --danger-soft: #f9e3de;
+  --info: #2d5b8c;
+  --info-soft: #e4edf7;
+  --chart-1: #0b7d57;
+  --chart-1-soft: #a8d3c1;
+  --chart-2: #6a5acd;
+  --chart-grid: #ebe5d8;
+  --paper: #fdfbf4;
+  --paper-rule: #c7d7ea;
+  --paper-margin: #e8a0a0;
+  --ink-blue: #1c3a8c;
+  --ink-black: #262626;
+  --shadow-sm: 0 1px 0 rgb(21 32 26 / 0.04), 0 1px 3px rgb(21 32 26 / 0.06);
+  --shadow-md: 0 1px 0 rgb(21 32 26 / 0.04), 0 12px 32px -14px rgb(21 32 26 / 0.24);
+  --shadow-lg: 0 30px 70px -24px rgb(21 32 26 / 0.38);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c110f;
+    --surface: #131a17;
+    --surface-2: #17201c;
+    --sunken: #0f1512;
+    --line: #242f2a;
+    --line-strong: #34413a;
+    --ink: #e8eee8;
+    --ink-2: #b2beb7;
+    --ink-3: #8b978f;
+    --brand: #3dbb8a;
+    --brand-strong: #63d1a5;
+    --brand-soft: #133a2b;
+    --brand-ink: #04130d;
+    --marker: rgba(236, 196, 66, 0.46);
+    --marker-edge: #e8c34a;
+    --good: #4cc38a;
+    --good-soft: #12321f;
+    --warn: #e2a84e;
+    --warn-soft: #36270e;
+    --danger: #f08470;
+    --danger-soft: #3a1914;
+    --info: #86b7e8;
+    --info-soft: #14273a;
+    --chart-1: #2e9e72;
+    --chart-1-soft: #1d5a44;
+    --chart-2: #8b7fe0;
+    --chart-grid: #212b26;
+    --shadow-sm: 0 1px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 1px 0 rgb(0 0 0 / 0.3), 0 16px 36px -16px rgb(0 0 0 / 0.7);
+    --shadow-lg: 0 30px 70px -20px rgb(0 0 0 / 0.8);
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-sunken: var(--sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-ink: var(--brand-ink);
+  --color-marker: var(--marker);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-display-serif), Georgia, serif;
+  --font-hand: var(--font-hand-kalam), "Comic Sans MS", cursive;
+  --shadow-soft: var(--shadow-sm);
+  --shadow-card: var(--shadow-md);
+  --shadow-float: var(--shadow-lg);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: var(--marker);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+/* Soft light behind the whole app */
+.paper-grain {
+  background-image:
+    radial-gradient(1200px 600px at 10% -10%, color-mix(in oklab, var(--brand) 7%, transparent), transparent 60%),
+    radial-gradient(900px 500px at 110% 0%, color-mix(in oklab, var(--marker-edge) 10%, transparent), transparent 60%);
+}
+
+/* ---------- motion ---------- */
+
+@keyframes marker-sweep {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.marker-sweep {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: marker-sweep 520ms var(--ease-out) both;
+}
+
+@keyframes scan {
+  0% { transform: translateY(-10%); opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(1000%); opacity: 0; }
+}
+.scan-line {
+  animation: scan 1.8s var(--ease-out) infinite;
+}
+
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--ink) 7%, transparent), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.rise {
+  animation: rise 480ms var(--ease-out) both;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes bar-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.bar-grow {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: bar-grow 640ms var(--ease-out) both;
+}
+
+@keyframes ring-draw {
+  from { stroke-dashoffset: var(--ring-c); }
+}
+.ring-draw {
+  animation: ring-draw 1100ms var(--ease-out) both;
+}
+
+/* ---------- sheet (native dialog) ---------- */
+
+dialog.sheet {
+  position: fixed;
+  inset: auto 0 0 0;
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 92dvh;
+  padding: 0;
+  border: 0;
+  border-radius: 22px 22px 0 0;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(0);
+  transition:
+    transform 360ms var(--ease-out),
+    overlay 360ms allow-discrete,
+    display 360ms allow-discrete;
+}
+dialog.sheet:not([open]),
+dialog.sheet.closing {
+  transform: translateY(100%);
+}
+@starting-style {
+  dialog.sheet[open] {
+    transform: translateY(100%);
+  }
+}
+dialog.sheet::backdrop {
+  background: rgb(10 16 13 / 0.42);
+  backdrop-filter: blur(3px);
+  opacity: 1;
+  transition:
+    opacity 300ms ease,
+    overlay 300ms allow-discrete,
+    display 300ms allow-discrete;
+}
+dialog.sheet.closing::backdrop {
+  opacity: 0;
+}
+@starting-style {
+  dialog.sheet[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  dialog.sheet {
+    inset: 0 0 0 auto;
+    width: min(600px, 92vw);
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 22px 0 0 22px;
+  }
+  dialog.sheet:not([open]),
+  dialog.sheet.closing {
+    transform: translateX(100%);
+  }
+  @starting-style {
+    dialog.sheet[open] {
+      transform: translateX(100%);
+    }
+  }
+}
+
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* ---------- print: a clean evidence report ---------- */
+
+@media print {
+  :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #ffffff;
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+    color-scheme: light;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-break {
+    break-inside: avoid;
+  }
+  body {
+    background: #fff;
+  }
+}
